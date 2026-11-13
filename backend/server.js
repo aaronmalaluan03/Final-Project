@@ -8,9 +8,16 @@ const MySQLStore = require('express-mysql-session')(session);
 
 const app = express();
 
+const isProd = process.env.NODE_ENV === 'production';
+app.set('trust proxy', 1);
+
 // MIDDLEWARE
 app.use(cors({
-    origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
+    origin: [
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        'https://aaronmalaluan.github.io'
+    ],
     credentials: true
 }));
 
@@ -19,9 +26,11 @@ app.use(express.json());
 // MYSQL SESSION STORE
 const sessionStore = new MySQLStore({
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
     createDatabaseTable: true,
     schema: {
         tableName: 'sessions'
@@ -36,10 +45,10 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 1000 * 60 * 60 * 2
-    }
+}
 }));
 
 // IMPORT ROUTES
